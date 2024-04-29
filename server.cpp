@@ -112,8 +112,8 @@ bool colocarFicha(char tablero[FILAS][COLUMNAS], int columna, char jugador) {
         return false; // Columna fuera de rango
     }
 
-    // Buscar la primera fila vacía (de abajo hacia arriba) en la columna seleccionada
-    for (int fila = 0; fila < FILAS; ++fila) {
+    // Buscar la primera fila vacía (de arriba hacia abajo) en la columna seleccionada
+    for (int fila = FILAS - 1; fila >= 0; --fila) {
         if (tablero[fila][columna] == VACIO) {
             tablero[fila][columna] = jugador;
             return true;

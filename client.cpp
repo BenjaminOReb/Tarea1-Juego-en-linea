@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <cerrno>
 
 using namespace std;
 
@@ -22,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     int socketCliente = socket(AF_INET, SOCK_STREAM, 0);
     if (socketCliente == -1) {
-        cerr << "Error al crear el socket." << endl;
+        cerr << "Error al crear el socket: " << strerror(errno) << endl;
         return 1;
     }
 
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
     inet_pton(AF_INET, ipServidor, &direccionServidor.sin_addr);
 
     if (connect(socketCliente, (sockaddr *)&direccionServidor, sizeof(direccionServidor)) == -1) {
-        cerr << "Error al intentar conectarse al servidor." << endl;
+        cerr << "Error al intentar conectarse al servidor: " << strerror(errno) << endl;
         close(socketCliente);
         return 1;
     }
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
         // Recibir mensajes del servidor
         bytesRecibidos = recv(socketCliente, buffer, MAX_BUFFER - 1, 0);
         if (bytesRecibidos == -1) {
-            cerr << "Error al recibir datos del servidor." << endl;
+            cerr << "Error al recibir datos del servidor: " << strerror(errno) << endl;
             break;
         } else if (bytesRecibidos == 0) {
             cerr << "Conexión cerrada por el servidor." << endl;
@@ -64,14 +65,14 @@ int main(int argc, char *argv[]) {
         // Pedir entrada al usuario (columna)
         cout << "Ingrese la columna (1-7): ";
         if (!(cin >> columna) || columna < 1 || columna > 7) {
-            cerr << "Entrada inválida. Debe ser un número entre 1 y 7." << endl;
+            cerr << "Entrada inválida. Debe ser un número entero entre 1 y 7." << endl;
             break;
         }
 
         // Enviar la jugada al servidor
         snprintf(buffer, MAX_BUFFER, "%d", columna);
         if (send(socketCliente, buffer, strlen(buffer), 0) == -1) {
-            cerr << "Error al enviar datos al servidor." << endl;
+            cerr << "Error al enviar datos al servidor: " << strerror(errno) << endl;
             break;
         }
     }
