@@ -128,9 +128,9 @@ void manejarJuego(Juego& juego) {
     juego.juegoEnCurso = true;
     juego.turno = JUGADOR1; // Comienza el jugador 1
 
-    cout << "Juego nuevo[" << juego.ipPuertoJugador1 << "]" << endl;
+    cout << "Juego nuevo [" << juego.ipPuertoJugador1 << "]" << endl;
     if (juego.socketJugador2 != -1) {
-        cout << "Juego nuevo[" << juego.ipPuertoJugador2 << "]" << endl;
+        cout << "Juego nuevo [" << juego.ipPuertoJugador2 << "]" << endl;
     }
 
     while (juego.juegoEnCurso) {
@@ -160,26 +160,32 @@ void manejarJuego(Juego& juego) {
         int bytesRecibidos = recv(jugadorSocket, buffer, sizeof(buffer), 0);
 
         if (bytesRecibidos > 0) {
-    	int columna = atoi(buffer) - 1; // Convertir entrada a número de columna y ajustar índice
-    	if (columna >= 0 && columna < COLUMNAS) {
-    	    if (colocarFicha(juego.tablero, columna, juego.turno)) {
-    	        // La ficha se ha colocado correctamente en el tablero
-    	        // Verificar victoria después de colocar la ficha
-    	        if (verificarVictoria(juego.tablero, juego.turno)) {
-    	            send(jugadorSocket, "¡Ganaste!\n", 10, 0);
-    	            juego.juegoEnCurso = false;
-    	      	} else {
-    	            juego.turno = (juego.turno == JUGADOR1) ? JUGADOR2 : JUGADOR1;
-    	          }
-    	    	} else {
-                    send(jugadorSocket, "Jugada inválida\n", 16, 0);
-    	          }
-    		} else {
-        	    send(jugadorSocket, "Jugada inválida\n", 16, 0);
-    	  	  }
-		} else {
-    		juego.juegoEnCurso = false;
-	}
+            buffer[bytesRecibidos] = '\0'; // Añadir terminador nulo
+            int columna = atoi(buffer) - 1; // Convertir entrada a número de columna y ajustar índice
+            if (colocarFicha(juego.tablero, columna, juego.turno)) {
+                // La ficha se ha colocado correctamente en el tablero
+                // Verificar victoria después de colocar la ficha
+                if (verificarVictoria(juego.tablero, juego.turno)) {
+                    send(jugadorSocket, "¡Ganaste!\n", 10, 0);
+                    int otroJugadorSocket = (juego.turno == JUGADOR1) ? juego.socketJugador2 : juego.socketJugador1;
+                    if (otroJugadorSocket != -1) {
+                        send(otroJugadorSocket, "¡Perdiste!\n", 10, 0);
+                    }
+                    juego.juegoEnCurso = false;
+                } else {
+                    juego.turno = (juego.turno == JUGADOR1) ? JUGADOR2 : JUGADOR1;
+                }
+            } else {
+                send(jugadorSocket, "Jugada inválida. Columna llena.\n", 32, 0);
+            }
+        } else {
+            if (bytesRecibidos == 0) {
+                cout << "El jugador ha cerrado la conexión." << endl;
+            } else {
+                cerr << "Error al recibir datos del jugador: " << strerror(errno) << endl;
+            }
+            juego.juegoEnCurso = false;
+        }
     }
 
     close(juego.socketJugador1);
@@ -188,14 +194,21 @@ void manejarJuego(Juego& juego) {
     }
 
     // Mostrar resultados del juego al finalizar
-    if (juego.juegoEnCurso) {
-        cout << "Juego [IP" << juego.ipPuertoJugador1 << "]: empate." << endl;
-    } else if (juego.turno == JUGADOR1) {
-        cout << "Juego [IP" << juego.ipPuertoJugador1 << "]: gana JUGADOR1." << endl;
-        cout << "Juego [IP" << juego.ipPuertoJugador2 << "]: fin del juego." << endl;
+    if (!juego.juegoEnCurso) {
+        if (juego.turno == JUGADOR1) {
+            cout << "Juego [" << juego.ipPuertoJugador1 << "]: gana JUGADOR1." << endl;
+            if (juego.socketJugador2 != -1) {
+                cout << "Juego [" << juego.ipPuertoJugador2 << "]: fin del juego." << endl;
+            }
+        } else {
+            cout << "Juego [" << juego.ipPuertoJugador2 << "]: gana JUGADOR2." << endl;
+            cout << "Juego [" << juego.ipPuertoJugador1 << "]: fin del juego." << endl;
+        }
     } else {
-        cout << "Juego [IP" << juego.ipPuertoJugador2 << "]: gana JUGADOR2." << endl;
-        cout << "Juego [IP" << juego.ipPuertoJugador1 << "]: fin del juego." << endl;
+        cout << "Juego [" << juego.ipPuertoJugador1 << "]: empate." << endl;
+        if (juego.socketJugador2 != -1) {
+            cout << "Juego [" << juego.ipPuertoJugador2 << "]: fin del juego." << endl;
+        }
     }
 }
 
@@ -269,4 +282,3 @@ int main(int argc, char *argv[]) {
     close(socketServidor);
     return 0;
 }
-

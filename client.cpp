@@ -58,26 +58,27 @@ int main(int argc, char *argv[]) {
         buffer[bytesRecibidos] = '\0';
         cout << buffer;
 
-        if (strstr(buffer, "¡Ganaste!") != nullptr) {
-            break; // Terminar el juego si el cliente ganó
+        if (strstr(buffer, "¡Ganaste!") != nullptr || strstr(buffer, "¡Perdiste!") != nullptr) {
+            break; // Terminar el juego si el cliente ganó o perdió
         }
 
-        // Pedir entrada al usuario (columna)
-        cout << "Ingrese la columna (1-7): ";
-        if (!(cin >> columna) || columna < 1 || columna > 7) {
-            cerr << "Entrada inválida. Debe ser un número entero entre 1 y 7." << endl;
-            break;
-        }
+        if (strstr(buffer, "Ingrese columna") != nullptr) {
+            // Pedir entrada al usuario (columna)
+            cout << "Ingrese la columna (1-7): ";
+            if (!(cin >> columna) || columna < 1 || columna > 7) {
+                cerr << "Entrada inválida. Debe ser un número entero entre 1 y 7." << endl;
+                continue;
+            }
 
-        // Enviar la jugada al servidor
-        snprintf(buffer, MAX_BUFFER, "%d", columna);
-        if (send(socketCliente, buffer, strlen(buffer), 0) == -1) {
-            cerr << "Error al enviar datos al servidor: " << strerror(errno) << endl;
-            break;
+            // Enviar la jugada al servidor
+            snprintf(buffer, MAX_BUFFER, "%d", columna);
+            if (send(socketCliente, buffer, strlen(buffer), 0) == -1) {
+                cerr << "Error al enviar datos al servidor: " << strerror(errno) << endl;
+                break;
+            }
         }
     }
 
     close(socketCliente);
     return 0;
 }
-
